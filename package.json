@@ -1,0 +1,18 @@
+{
+  "name": "TodoServer",
+  "version": "0.0.0",
+  "description": "A server for the Todo application",
+  "main": "index.js",
+  "author": "Chris Browne <yoda2031@gmail.com>",
+  "dependencies": {
+    "body-parser": "^1.4.3",
+    "express": "^4.4.4",
+    "mongoose": "^3.8.12",
+    "passport": "^0.2.0",
+    "passport-local": "^1.0.0",
+    "scrypt": "^3.0.1"
+  },
+  "devDependencies": {
+    "morgan": "^1.1.1"
+  }
+}
