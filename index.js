@@ -2,14 +2,18 @@ var express = require('express'),
     app = express(),
     passport = require('passport'),
     bodyParser = require('body-parser'),
+    cookieParser = require('cookie-parser'),
     morgan = require('morgan'),
     mongoose = require('mongoose'),
     LocalStrategy = require('passport-local').Strategy,
     db,
+    session = require('express-session'),
     config = require('./config.js');
 
 app.use(bodyParser.json());
 app.use(morgan());
+app.use(session({secret: 'foobar'}));
+app.use(cookieParser('foobar'));
 app.use(passport.initialize());
 app.use(passport.session());
 
@@ -24,11 +28,11 @@ db.once('open', function () {
     var user = require('./db/user.js')(mongoose);
 
     passport.serializeUser(function (user, done) {
-        return done(null, user.id);
+        return done(null, user._id);
     });
 
     passport.deserializeUser(function (id, done) {
-        user.model.findOne({id: id}, function (error, result) {
+        user.model.findOne({_id: id}, function (error, result) {
             if(error) {
                 done(error);
             } else {
@@ -57,7 +61,23 @@ db.once('open', function () {
         }
     ));
 
-    app.post('/login', passport.authenticate('local', {failureRedirect: '/login/fail', successRedirect: '/login/success'}));
+    app.post('/login', function (req, res, next) {
+        passport.authenticate('local', function (err, user, info) {
+            if(err) {
+                return next(err);
+            } else if (!user) {
+                return res.redirect('/login/fail');
+            } else {
+                req.logIn(user, function (err) {
+                    if(err) {
+                        return next(err);
+                    } else {
+                        return res.redirect('/login/success');
+                    }
+                });
+            }
+        })(req,res,next);
+    });
 
     app.post('*', function (req, res) {
         res.send(404, {
@@ -74,6 +94,21 @@ db.once('open', function () {
             success: success
         });
     });
+
+    app.get('/', function (req, res) {
+        if(req.isAuthenticated())  {
+            res.send(200, {
+                user: req.user
+            });
+        } else {
+            res.send(403, {
+                status: 403,
+                error: "User not authenticated",
+                requestedResource: req.url
+            });
+        }
+    });
+
     app.get('*', function (req, res) {
         res.send(404, {
             status: 404,
